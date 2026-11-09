@@ -87,7 +87,7 @@ def register_model(
     db.commit()
     db.refresh(new_model)
 
-    return new_mode
+    return new_model
 
 @app.get("/models", response_model=list[MLModelResponse])
 def get_models(db: Session = Depends(get_db)):
