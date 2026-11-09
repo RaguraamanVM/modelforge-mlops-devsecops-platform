@@ -1,0 +1,36 @@
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Model artifacts
+storage/models/
+*.joblib
+*.pkl
+*.pickle
+
+# Local development files
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# Build artifacts
+build/
+dist/
+
