@@ -143,3 +143,38 @@ def test_upload_with_invalid_api_key(upload_client):
 
     assert response.status_code == 401
     db.commit.assert_not_called()
+
+
+def test_replacing_artifact_revokes_approval(upload_client):
+    from datetime import datetime, timezone
+    import hashlib
+
+    client, model, db, storage = upload_client
+
+    # Simulate an artifact previously approved by an administrator.
+    model.artifact_sha256 = "a" * 64
+    model.approved_artifact_sha256 = "a" * 64
+    model.artifact_approved_at = datetime.now(timezone.utc)
+
+    replacement = b"replacement model artifact"
+
+    response = client.post(
+        "/models/123/artifact",
+        files={
+            "file": (
+                "replacement.joblib",
+                BytesIO(replacement),
+                "application/octet-stream",
+            )
+        },
+    )
+
+    assert response.status_code == 201
+    assert model.artifact_sha256 == hashlib.sha256(replacement).hexdigest()
+    assert model.approved_artifact_sha256 is None
+    assert model.artifact_approved_at is None
+
+    stored_file = storage / model.artifact_path
+    assert stored_file.read_bytes() == replacement
+
+    db.commit.assert_called_once()

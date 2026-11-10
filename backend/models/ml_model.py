@@ -20,6 +20,8 @@ class MLModel(Base):
     artifact_filename = Column(String(255), nullable=True)
     artifact_size_bytes = Column(BigInteger, nullable=True)
     artifact_sha256 = Column(String(64), nullable=True)
+    approved_artifact_sha256 = Column(String(64), nullable=True)
+    artifact_approved_at = Column(DateTime(timezone=True), nullable=True)
 
     id = Column(
         Integer,

@@ -54,6 +54,7 @@ def test_successful_prediction(tmp_path, monkeypatch):
         version="1.0",
         artifact_path="2/model.joblib",
         artifact_sha256=checksum,
+        approved_artifact_sha256=checksum,
     )
     db = mock_db_record(record)
 
@@ -93,6 +94,7 @@ def test_invalid_prediction_features(tmp_path, monkeypatch):
         version="1.0",
         artifact_path="2/model.joblib",
         artifact_sha256=checksum,
+        approved_artifact_sha256=checksum,
     )
     db = mock_db_record(record)
 
@@ -189,3 +191,33 @@ def test_artifact_checksum_mismatch(tmp_path, monkeypatch):
         loader.assert_not_called()
 
     assert exc.value.status_code == 409
+
+
+@pytest.mark.parametrize("approved_checksum", [None, "0" * 64])
+def test_unapproved_artifact_cannot_execute(
+    tmp_path, monkeypatch, approved_checksum
+):
+    from services import inference_service
+
+    monkeypatch.setattr(inference_service, "ARTIFACT_DIR", tmp_path)
+
+    artifact = tmp_path / "2" / "model.joblib"
+    artifact.parent.mkdir()
+    artifact.write_bytes(b"test-artifact")
+
+    checksum = hashlib.sha256(artifact.read_bytes()).hexdigest()
+
+    record = SimpleNamespace(
+        artifact_path="2/model.joblib",
+        artifact_sha256=checksum,
+        approved_artifact_sha256=approved_checksum,
+    )
+
+    with patch("services.inference_service.joblib.load") as loader:
+        with pytest.raises(HTTPException) as exc:
+            predict_model(2, [1.0], mock_db_record(record))
+
+        loader.assert_not_called()
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "Model artifact is not approved for inference"

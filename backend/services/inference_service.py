@@ -74,8 +74,17 @@ def predict_model(
             detail="Artifact integrity verification failed",
         )
 
+    if (
+        not model_record.approved_artifact_sha256
+        or model_record.approved_artifact_sha256 != model_record.artifact_sha256
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Model artifact is not approved for inference",
+        )
+
     try:
-        # Load only artifacts that pass integrity verification.
+        # Load only artifacts that pass integrity and approval checks.
         ml_model = joblib.load(artifact_path)
 
         input_data = np.array(

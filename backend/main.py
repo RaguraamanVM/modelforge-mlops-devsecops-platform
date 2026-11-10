@@ -1,7 +1,8 @@
 import hashlib
-from core.security import require_api_key
+from core.security import require_api_key, require_admin_key
 from core.config import ARTIFACT_DIR
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -167,6 +168,67 @@ def update_model(
 
 
 
+class ArtifactApprovalRequest(BaseModel):
+    expected_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+    )
+
+
+@app.post("/models/{model_id}/approve")
+def approve_model_artifact(
+    model_id: int,
+    approval: ArtifactApprovalRequest,
+    db: Session = Depends(get_db),
+    _admin: None = Depends(require_admin_key),
+):
+    from datetime import datetime, timezone
+
+    model = db.query(MLModel).filter(MLModel.id == model_id).first()
+
+    if model is None:
+        raise HTTPException(status_code=404, detail="Model not found")
+
+    if not model.artifact_path or not model.artifact_sha256:
+        raise HTTPException(status_code=400, detail="No valid artifact registered")
+
+    if approval.expected_sha256 != model.artifact_sha256:
+        raise HTTPException(
+            status_code=409,
+            detail="Expected checksum does not match registered artifact",
+        )
+
+    artifact_root = ARTIFACT_DIR.resolve()
+    artifact_path = (artifact_root / model.artifact_path).resolve()
+
+    if not artifact_path.is_relative_to(artifact_root):
+        raise HTTPException(status_code=400, detail="Invalid artifact path")
+
+    if not artifact_path.is_file():
+        raise HTTPException(status_code=404, detail="Artifact file not found")
+
+    sha256 = hashlib.sha256()
+
+    with artifact_path.open("rb") as artifact:
+        for chunk in iter(lambda: artifact.read(1024 * 1024), b""):
+            sha256.update(chunk)
+
+    if sha256.hexdigest() != model.artifact_sha256:
+        raise HTTPException(status_code=409, detail="Artifact integrity verification failed")
+
+    model.approved_artifact_sha256 = model.artifact_sha256
+    model.artifact_approved_at = datetime.now(timezone.utc)
+
+    db.commit()
+
+    return {
+        "message": "Model artifact approved",
+        "model_id": model_id,
+        "approved_sha256": model.approved_artifact_sha256,
+    }
+
+
 MAX_ARTIFACT_SIZE = 50 * 1024 * 1024
 
 @app.post("/models/{model_id}/artifact", status_code=201)
@@ -228,6 +290,8 @@ async def upload_model_artifact(
     model.artifact_filename = stored_filename
     model.artifact_size_bytes = total_size
     model.artifact_sha256 = sha256.hexdigest()
+    model.approved_artifact_sha256 = None
+    model.artifact_approved_at = None
 
     try:
         db.commit()
