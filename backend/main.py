@@ -1,3 +1,4 @@
+from core.config import ARTIFACT_DIR
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -160,7 +161,7 @@ def update_model(
     return model
 
 
-ARTIFACT_DIR = Path(__file__).resolve().parent.parent / "storage" / "models"
+
 MAX_ARTIFACT_SIZE = 50 * 1024 * 1024
 
 @app.post("/models/{model_id}/artifact", status_code=201)

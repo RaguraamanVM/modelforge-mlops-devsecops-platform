@@ -11,11 +11,7 @@ from models.ml_model import MLModel
 from core.config import ARTIFACT_DIR
 
 
-ARTIFACT_DIR = (
-    Path(__file__).resolve().parent.parent.parent
-    / "storage"
-    / "models"
-)
+
 
 
 def predict_model(
