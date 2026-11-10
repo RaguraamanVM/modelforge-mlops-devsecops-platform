@@ -34,3 +34,6 @@ storage/models/
 build/
 dist/
 
+
+# Local security scan reports
+trivy-*-report.json

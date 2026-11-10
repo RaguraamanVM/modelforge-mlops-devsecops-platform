@@ -33,3 +33,46 @@ jobs:
 
       - name: Run automated tests
         run: python -m pytest tests/ -v
+
+  container-security:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: |
+          docker build \
+            -f backend/Dockerfile \
+            -t modelforge-backend:ci .
+
+      - name: Scan image and generate report
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: modelforge-backend:ci
+          format: json
+          output: trivy-ci-report.json
+          severity: HIGH,CRITICAL
+          scanners: vuln
+          exit-code: '0'
+
+      - name: Upload vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: modelforge-trivy-report
+          path: trivy-ci-report.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce security gate
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: modelforge-backend:ci
+          format: table
+          severity: HIGH,CRITICAL
+          scanners: vuln
+          ignore-unfixed: true
+          exit-code: '1'
