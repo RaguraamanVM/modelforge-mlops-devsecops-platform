@@ -49,14 +49,17 @@ jobs:
             -t modelforge-backend:ci .
 
       - name: Scan image and generate report
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: modelforge-backend:ci
-          format: json
-          output: trivy-ci-report.json
-          severity: HIGH,CRITICAL
-          scanners: vuln
-          exit-code: '0'
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v trivy-ci-cache:/root/.cache/ \
+            -v "$PWD:/reports" \
+            aquasec/trivy:0.65.0 \
+            image --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --format json \
+            --output /reports/trivy-ci-report.json \
+            modelforge-backend:ci
 
       - name: Upload vulnerability report
         if: always()
@@ -68,11 +71,13 @@ jobs:
           retention-days: 7
 
       - name: Enforce security gate
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: modelforge-backend:ci
-          format: table
-          severity: HIGH,CRITICAL
-          scanners: vuln
-          ignore-unfixed: true
-          exit-code: '1'
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v trivy-ci-cache:/root/.cache/ \
+            aquasec/trivy:0.65.0 \
+            image --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            modelforge-backend:ci
