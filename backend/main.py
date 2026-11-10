@@ -1,3 +1,4 @@
+import hashlib
 from core.security import require_api_key
 from core.config import ARTIFACT_DIR
 from fastapi import FastAPI, HTTPException
@@ -196,6 +197,7 @@ async def upload_model_artifact(
     stored_filename = f"{uuid4().hex}{Path(filename).suffix.lower()}"
     artifact_path = model_dir / stored_filename
     total_size = 0
+    sha256 = hashlib.sha256()
 
     try:
         with artifact_path.open("wb") as output:
@@ -209,6 +211,7 @@ async def upload_model_artifact(
                     )
 
                 output.write(chunk)
+                sha256.update(chunk)
 
     except Exception:
         artifact_path.unlink(missing_ok=True)
@@ -221,6 +224,7 @@ async def upload_model_artifact(
     model.artifact_path = f"{model_id}/{stored_filename}"
     model.artifact_filename = stored_filename
     model.artifact_size_bytes = total_size
+    model.artifact_sha256 = sha256.hexdigest()
 
     try:
         db.commit()

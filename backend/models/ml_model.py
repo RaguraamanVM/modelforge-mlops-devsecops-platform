@@ -18,7 +18,8 @@ class MLModel(Base):
 
     artifact_path = Column(String(500), nullable=True)
     artifact_filename = Column(String(255), nullable=True)
-    artifact_size_bytes = Column(BigInteger, nullable=True) 
+    artifact_size_bytes = Column(BigInteger, nullable=True)
+    artifact_sha256 = Column(String(64), nullable=True)
 
     id = Column(
         Integer,

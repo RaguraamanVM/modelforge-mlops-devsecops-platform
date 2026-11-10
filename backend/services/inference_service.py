@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 import joblib
@@ -55,8 +56,26 @@ def predict_model(
             detail="Model artifact file not found",
         )
 
+    if not model_record.artifact_sha256:
+        raise HTTPException(
+            status_code=403,
+            detail="Artifact checksum missing; re-upload required",
+        )
+
+    sha256 = hashlib.sha256()
+
+    with artifact_path.open("rb") as artifact:
+        for chunk in iter(lambda: artifact.read(1024 * 1024), b""):
+            sha256.update(chunk)
+
+    if sha256.hexdigest() != model_record.artifact_sha256:
+        raise HTTPException(
+            status_code=409,
+            detail="Artifact integrity verification failed",
+        )
+
     try:
-        # Only load trusted model artifacts.
+        # Load only artifacts that pass integrity verification.
         ml_model = joblib.load(artifact_path)
 
         input_data = np.array(
