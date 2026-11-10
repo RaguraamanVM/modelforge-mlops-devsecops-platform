@@ -1,3 +1,4 @@
+from core.security import require_api_key
 from core.config import ARTIFACT_DIR
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
@@ -168,7 +169,8 @@ MAX_ARTIFACT_SIZE = 50 * 1024 * 1024
 async def upload_model_artifact(
     model_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ):
     model = db.query(MLModel).filter(
         MLModel.id == model_id
@@ -241,6 +243,7 @@ def predict_model(
     model_id: int,
     request: PredictionRequest,
     db: Session = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ):
     return run_inference(
         model_id=model_id,

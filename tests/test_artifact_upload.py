@@ -17,6 +17,9 @@ from models.ml_model import MLModel
 
 @pytest.fixture
 def upload_client(tmp_path, monkeypatch):
+    # Configure a test-only API key.
+    monkeypatch.setenv("MODELFORGE_API_KEY", "test-only-api-key")
+
     # Redirect uploads to temporary storage.
     monkeypatch.setattr(main, "ARTIFACT_DIR", tmp_path)
 
@@ -38,6 +41,7 @@ def upload_client(tmp_path, monkeypatch):
 
     try:
         with TestClient(main.app) as client:
+            client.headers.update({"X-API-Key": "test-only-api-key"})
             yield client, model, db, tmp_path
     finally:
         main.app.dependency_overrides.pop(get_db, None)
@@ -112,4 +116,30 @@ def test_oversized_artifact_upload(upload_client, monkeypatch):
 
     assert response.status_code == 413
     assert not list(storage.rglob("*.joblib"))
+    db.commit.assert_not_called()
+
+
+def test_upload_without_api_key(upload_client):
+    client, model, db, storage = upload_client
+
+    response = client.post(
+        "/models/123/artifact",
+        headers={"X-API-Key": ""},
+        files={"file": ("model.joblib", b"data")},
+    )
+
+    assert response.status_code == 401
+    db.commit.assert_not_called()
+
+
+def test_upload_with_invalid_api_key(upload_client):
+    client, model, db, storage = upload_client
+
+    response = client.post(
+        "/models/123/artifact",
+        headers={"X-API-Key": "incorrect-key"},
+        files={"file": ("model.joblib", b"data")},
+    )
+
+    assert response.status_code == 401
     db.commit.assert_not_called()
