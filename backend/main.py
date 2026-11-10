@@ -62,7 +62,8 @@ def database_health_check():
 @app.post("/models", response_model=MLModelResponse, status_code=201)
 def register_model(
     model_data: MLModelCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ):
     existing_model = (
         db.query(MLModel)
@@ -120,7 +121,8 @@ def get_model_by_id(
 @app.delete("/models/{model_id}", status_code=204)
 def delete_model(
     model_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ):
     model = db.query(MLModel).filter(
         MLModel.id == model_id
@@ -140,7 +142,8 @@ def delete_model(
 def update_model(
     model_id: int,
     model_data: MLModelUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ):
     model = db.query(MLModel).filter(
         MLModel.id == model_id
