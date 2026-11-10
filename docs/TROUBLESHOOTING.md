@@ -280,3 +280,111 @@ This is a security/development practice, not an incident.
 - Preserve exact error logs for future incidents.
 - Keep architecture decisions in a separate document.
 - Update this history whenever new issues are resolved.
+
+---
+
+# Phase 2 — AWS Deployment and Platform Engineering
+
+## INC-007 — WSL2 Memory Pressure and Terminal Instability
+
+**Status:** Mitigated
+
+**Symptoms:** WSL2 experienced resource pressure and unstable terminal behavior during development and AWS deployment work.
+
+**Action taken:** Configured Windows `.wslconfig` with 4 GB memory, 2 processors, and 4 GB swap.
+
+**Verification:** WSL subsequently reported approximately 3.8 GiB RAM and 4 GiB swap, and the terminal was usable.
+
+**Lesson:** Local workstation capacity must be considered when running Docker, Kubernetes tooling, and cloud deployment workflows.
+
+## INC-008 — FastAPI NameError During Backend Development
+
+**Status:** Resolved during development
+
+**Symptoms:** A backend execution path raised a `NameError` involving `new_mode`.
+
+**Resolution:** The application code was corrected during backend development. The exact patch and traceback are not preserved in this document.
+
+**Lesson:** Run regression tests after modifying request handlers and database operations.
+
+## INC-009 — EKS Managed Node Group Creation Failure
+
+**Status:** Open — nonblocking for the current demonstration
+
+**Symptoms:** The EKS managed node group reported `CREATE_FAILED` and `NodeCreationFailure`.
+
+**Observed state:** At least one Kubernetes worker node became Ready, and the backend and frontend workloads ran successfully.
+
+**Investigation:** Terraform and EKS recovery attempts were performed. A complete root cause has not been established.
+
+**Decision:** Defer further node-group recovery to prioritize a working portfolio demonstration.
+
+**Impact:** The deployment cannot be described as fully healthy or production-ready.
+
+## INC-010 — Amazon EBS Persistent Storage Integration
+
+**Status:** Operational with hardening limitations
+
+**Context:** Model artifacts needed persistent storage beyond the backend container filesystem.
+
+**Implementation:** Integrated Kubernetes persistent storage using Amazon EBS and the EBS CSI driver.
+
+**Observed challenge:** The non-root backend process required write access to the mounted artifact directory.
+
+**Current limitation:** The artifact directory was made writable using permissive filesystem permissions. This is not an acceptable final production security configuration.
+
+**Follow-up:** Implement secure volume ownership and permissions, then retest artifact upload and inference.
+
+## INC-011 — Kubernetes Service Access
+
+**Status:** Resolved for local demonstration
+
+**Symptoms:** Backend and frontend Services had no external IP address.
+
+**Cause:** Both Services use Kubernetes `ClusterIP`, which does not provide a public endpoint.
+
+**Workaround:** Use `kubectl port-forward` to access the Streamlit frontend and FastAPI backend from the local workstation.
+
+**Limitation:** Organization-wide access through private networking, an internal ALB, private DNS, and appropriate authentication remains future work.
+
+## INC-012 — Terraform Generated Files in Git Repository
+
+**Status:** Resolved
+
+**Symptoms:** Terraform generated binary plan files and readable plan output existed under `infrastructure/terraform/`.
+
+**Risk:** Terraform plans may contain sensitive infrastructure configuration and must not be published indiscriminately.
+
+**Resolution:** Added `.gitignore` exclusions for `*.tfplan`, generated plan text, Terraform state, and local Terraform working directories.
+
+**Verification:** `git check-ignore` confirmed the relevant plan files were excluded. No Terraform plan files were included in the documentation commit.
+
+## INC-013 — Documentation Terminal Paste Corruption
+
+**Status:** Mitigated
+
+**Symptoms:** Long terminal paste operations occasionally produced visibly malformed command text.
+
+**Action taken:** Used smaller commands and verified generated Markdown files after creation.
+
+**Verification:** HLD, LLD, deployment guide, and demo guide were created. The demo document contained the expected section headings.
+
+**Lesson:** Verify generated files rather than assuming successful command execution guarantees complete document integrity.
+
+---
+
+## Final Validation and Remaining Risks
+
+- Automated test suite: 30 tests passed in the last verified local run.
+- Backend and frontend Kubernetes Deployments: previously observed Ready.
+- AWS inference: previously verified using the Iris classifier.
+- EKS managed node-group failure: unresolved.
+- Production high availability: not implemented.
+- Shared organization-internal application URL: not implemented.
+- Artifact filesystem permission hardening: pending.
+- Remote GitHub Actions execution: not yet verified.
+- AWS resource cleanup: pending explicit authorization.
+
+## Documentation Policy
+
+This incident history distinguishes observed symptoms, confirmed causes, mitigations, and unresolved issues. Where the exact original error message or command history is unavailable, the document does not claim to reproduce it verbatim.
