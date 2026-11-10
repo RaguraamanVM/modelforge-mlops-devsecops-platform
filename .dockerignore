@@ -11,3 +11,8 @@ frontend/
 tests/
 docs/
 infrastructure/
+# Include frontend files required for the Streamlit image
+!frontend/
+frontend/*
+!frontend/app.py
+!frontend/Dockerfile

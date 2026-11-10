@@ -37,3 +37,27 @@ dist/
 
 # Local security scan reports
 trivy-*-report.json
+
+# Temporary files and backups
+backups/
+*.bak
+*.before-frontend
+
+# Terraform local state
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+
+# Credentials
+.env
+.env.*
+!.env.example
+*.pem
+
+# Terraform generated plans and diagnostic output
+*.tfplan
+infrastructure/terraform/*plan.txt
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.*

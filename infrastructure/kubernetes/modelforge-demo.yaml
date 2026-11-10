@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelforge-backend
+  namespace: modelforge
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: modelforge-backend
+  template:
+    metadata:
+      labels:
+        app: modelforge-backend
+    spec:
+      containers:
+        - name: backend
+          image: 634848780582.dkr.ecr.ap-south-1.amazonaws.com/modelforge-backend:eks-demo
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: modelforge-demo-postgres.cnsqacuqkr9t.ap-south-1.rds.amazonaws.com
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: modelforge-secrets
+                  key: POSTGRES_PASSWORD
+            - name: MODELFORGE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: modelforge-secrets
+                  key: MODELFORGE_API_KEY
+            - name: MODELFORGE_ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: modelforge-secrets
+                  key: MODELFORGE_ADMIN_KEY
+            - name: MODEL_ARTIFACT_DIR
+              value: /storage/models
+          volumeMounts:
+            - name: model-storage
+              mountPath: /storage/models
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: modelforge-model-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelforge-backend
+  namespace: modelforge
+spec:
+  type: ClusterIP
+  selector:
+    app: modelforge-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelforge-frontend
+  namespace: modelforge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelforge-frontend
+  template:
+    metadata:
+      labels:
+        app: modelforge-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: 634848780582.dkr.ecr.ap-south-1.amazonaws.com/modelforge-frontend:eks-demo
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          env:
+            - name: MODELFORGE_BACKEND_URL
+              value: http://modelforge-backend:8000
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelforge-frontend
+  namespace: modelforge
+spec:
+  type: ClusterIP
+  selector:
+    app: modelforge-frontend
+  ports:
+    - port: 8501
+      targetPort: 8501

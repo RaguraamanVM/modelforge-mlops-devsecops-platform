@@ -1,0 +1,23 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: modelforge-gp3
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: modelforge-model-storage
+  namespace: modelforge
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: modelforge-gp3
+  resources:
+    requests:
+      storage: 1Gi

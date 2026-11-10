@@ -1,0 +1,24 @@
+===== MODELForge AWS DEMO =====
+Tue Nov 10 17:42:46 UTC 2026
+
+===== KUBERNETES NODES =====
+NAME                                         STATUS   ROLES    AGE     VERSION
+ip-10-42-12-60.ap-south-1.compute.internal   Ready    <none>   3h58m   v1.34.12-eks-8418f54
+
+===== APPLICATION DEPLOYMENTS =====
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+modelforge-backend    1/1     1            1           25m
+modelforge-frontend   1/1     1            1           25m
+
+===== APPLICATION PODS =====
+NAME                                   READY   STATUS    RESTARTS   AGE   IP             NODE                                         NOMINATED NODE   READINESS GATES
+modelforge-backend-657b9db9fc-5z4st    1/1     Running   0          25m   10.42.12.73    ip-10-42-12-60.ap-south-1.compute.internal   <none>           <none>
+modelforge-frontend-6f544c9b99-dpbhs   1/1     Running   0          13m   10.42.12.108   ip-10-42-12-60.ap-south-1.compute.internal   <none>           <none>
+
+===== APPLICATION SERVICES =====
+NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+modelforge-backend    ClusterIP   172.20.242.73    <none>        8000/TCP   25m
+modelforge-frontend   ClusterIP   172.20.160.247   <none>        8501/TCP   25m
+
+===== DATABASE HEALTH =====
+{"status":"healthy","database":"postgresql"}

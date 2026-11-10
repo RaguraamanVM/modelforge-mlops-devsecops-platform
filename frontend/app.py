@@ -1,3 +1,9 @@
+import os
+
+BACKEND_URL = os.getenv("MODELFORGE_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+
+API_HEADERS = {"X-API-Key": os.getenv("MODELFORGE_API_KEY", "")}
+
 import streamlit as st
 
 st.set_page_config(
@@ -22,7 +28,7 @@ try:
     import requests
 
     response = requests.get(
-        "http://127.0.0.1:8000/health",
+        f"{BACKEND_URL}/health",
         timeout=5,
     )
     response.raise_for_status()
@@ -39,7 +45,7 @@ st.subheader("Registered Models")
 
 try:
     models_response = requests.get(
-        "http://127.0.0.1:8000/models",
+        f"{BACKEND_URL}/models",
         timeout=5,
     )
     models_response.raise_for_status()
@@ -104,7 +110,8 @@ if submitted:
 
         try:
             response = requests.post(
-                "http://127.0.0.1:8000/models",
+                f"{BACKEND_URL}/models",
+                headers=API_HEADERS,
                 json=payload,
                 timeout=10,
             )
@@ -157,7 +164,8 @@ if "models" in locals() and isinstance(models, list) and models:
 
             try:
                 response = requests.post(
-                    f"http://127.0.0.1:8000/models/{model_id}/artifact",
+                    f"{BACKEND_URL}/models/{model_id}/artifact",
+                    headers=API_HEADERS,
                     files={
                         "file": (
                             uploaded_file.name,
@@ -242,7 +250,8 @@ if "models" in locals() and isinstance(models, list) and models:
 
         try:
             response = requests.post(
-                f"http://127.0.0.1:8000/models/{model_id}/predict",
+                f"{BACKEND_URL}/models/{model_id}/predict",
+                headers=API_HEADERS,
                 json=payload,
                 timeout=30,
             )
