@@ -49,7 +49,7 @@ jobs:
             -t modelforge-backend:ci .
 
       - name: Scan image and generate report
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: modelforge-backend:ci
           format: json
@@ -68,7 +68,7 @@ jobs:
           retention-days: 7
 
       - name: Enforce security gate
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: modelforge-backend:ci
           format: table
